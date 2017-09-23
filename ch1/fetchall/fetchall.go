@@ -9,9 +9,10 @@ import (
 	"os"
 )
 
+//go run fetchall.go http://baidu.com http://360.cn http://qq.com
 func main() {
 	start := time.Now()
-	ch := make(chan string)
+	ch := make(chan string, len(os.Args[1:]))
 	for _, url := range os.Args[1:] {
 		go fetch(url, ch)
 	}
@@ -28,6 +29,7 @@ func fetch(url string, ch chan<- string) {
 		ch <- fmt.Sprint(err)
 		return
 	}
+	//只是统计bytes字节数,ioutil.Discard相当于舍弃内容(垃圾桶)
 	nbytes, err := io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 	if err != nil {
