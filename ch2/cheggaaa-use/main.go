@@ -4,6 +4,8 @@ import (
 	"github.com/blang/semver"
 	"fmt"
 	"time"
+	"io/ioutil"
+	"os"
 )
 
 func main() {
@@ -35,9 +37,24 @@ func main() {
 	fmt.Printf("%T\n", time.Duration(i))
 	fmt.Printf("%T\n", time.Second)
 
-	ticker := time.NewTicker(4 * time.Second / time.Duration(i))
-	for t := range ticker.C {
-		fmt.Println(t)
-		fmt.Printf("%T\n",t)
-	}
+	ioutil.WriteFile("json_error.txt", []byte("hello world"), 0644)
+
+	fmt.Println(os.Stat("hello.json"))
+
+	fmt.Println("------------------")
+	fmt.Println("hello")
+
+	go test()
+
+	time.Sleep(time.Second)
+
+	var se semver.Version
+
+	fmt.Println(se.String())
+
+}
+
+func test() {
+	fmt.Println("world")
+	fmt.Println("------------------")
 }
