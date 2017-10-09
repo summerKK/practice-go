@@ -4,6 +4,7 @@ import (
 	"github.com/boltdb/bolt"
 	"time"
 	"log"
+	"fmt"
 )
 
 func main() {
@@ -12,4 +13,15 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	walk := make(chan struct{})
+
+	go func() {
+
+		time.Sleep(3*time.Second)
+		fmt.Println("sleep")
+		close(walk)
+	}()
+	fmt.Println("watting")
+	fmt.Println(<-walk)
 }
