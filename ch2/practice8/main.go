@@ -1,15 +1,58 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
-var vendorAddresses map[string]map[string]string = map[string]map[string]string{}
+var ch chan int
 
 func main() {
 
-	vendorAddress := map[string]string{"name": "", "vendor_addr": "", "vendor_addr_cn": "", "vendor_addr_tw": "", "vendor_geo": ""}
-	vendorAddresses["danny"] = vendorAddress
-	vendorAddress["name"] = "danny"
-	vendorAddress["vendor_addr"] = "123456"
+	data := [...]int{1,2,3,4,5,6}
 
-	fmt.Println(vendorAddresses)
+	for _,d := range data {
+		v := d
+		fmt.Printf("%v",&v)
+		fmt.Printf("  %v",&d)
+		fmt.Println()
+	}
+
+	x := 1
+	defer func(a int) { fmt.Println("a=", a) }(x)
+	defer func() { fmt.Println("x=", x) }()
+	defer fmt.Println("c=",x)
+	x++
+
+	arr := new([10]int)
+
+	arr1 := []int{}
+
+	map1 := map[string]int{}
+
+	fmt.Printf("\n%T\n",arr)
+
+	test(arr)
+
+	fmt.Println(arr)
+
+	test1(arr1)
+
+	fmt.Println(arr1)
+
+	test2(map1)
+
+	fmt.Println(map1)
 }
+
+func test(arr *[10]int)  {
+	*arr = [10]int{1,2,3,4}
+}
+
+func test1(arr []int)  {
+	arr = []int{9,8,7,6,5}
+}
+
+func test2(map1 map[string]int) {
+	map1["summer"] = 1
+}
+
