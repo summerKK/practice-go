@@ -2,11 +2,23 @@ package main
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 )
 
 var ch chan int
 
 func main() {
+
+	s := "https://img.aitaotu.cc:8089/Pics/2015/1104/18/01.jpg"
+
+	parseUrl,_ := url.Parse(s)
+
+	fmt.Println(parseUrl.Path)
+
+	tmp := strings.TrimLeft(parseUrl.Path,"/")
+
+	fmt.Println(tmp)
 
 	data := [...]int{1,2,3,4,5,6}
 
