@@ -15,7 +15,7 @@ import (
 )
 
 const HOST string = "http://www.aitaotu.com"
-const DOC_URL string = "https://www.aitaotu.com/search/%E6%B8%85%E7%BA%AF/"
+const DOC_URL string = "https://www.aitaotu.com/search/%E6%80%A7%E6%84%9F90%E5%90%8E%E7%BE%8E%E5%A5%B3/"
 
 var (
 	ch1     chan string
