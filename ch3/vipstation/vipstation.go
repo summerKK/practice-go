@@ -12,16 +12,22 @@ import (
 	"os"
 	"sync"
 	"strconv"
+	"sort"
 )
 
 var (
 	db            *sql.DB
 	chanLoopCount chan int
 	chanImgUrl    chan string
+	chanMysql     chan map[string]string
 	chs           chan int
 	imgDir        string
 	wg            *sync.WaitGroup
 	mu            sync.Mutex
+	//统计每个sku下载文件的个数
+	record map[string]int
+	//存放所有sku的imgPath
+	newImgPaht map[string][]string
 )
 
 func init() {
@@ -34,6 +40,7 @@ func init() {
 
 	chanImgUrl = make(chan string, 100)
 	chanLoopCount = make(chan int, 1000)
+	chanMysql = make(chan map[string]string)
 	//控制goruntine
 	chs = make(chan int, 20)
 	imgDir = "D:/goprojects/src/practice/ch3/vipstation/pic/"
@@ -45,6 +52,8 @@ func init() {
 	}
 
 	wg = &sync.WaitGroup{}
+	record = map[string]int{}
+	newImgPaht = map[string][]string{}
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.SetOutput(logFile)
@@ -70,12 +79,17 @@ func main() {
 	}
 
 	go downloadImage()
+	go updateProduct()
 
 	defer rows.Close()
 	for rows.Next() {
 		var media_gallery, sku string
 		rows.Scan(&media_gallery, &sku)
 		imgPath := strings.Split(media_gallery, ";")
+		//把要下载的文件存放下来
+		mu.Lock()
+		record[sku] = len(imgPath)
+		mu.Unlock()
 		pos := 1
 		for _, url := range imgPath {
 			chanImgUrl <- sku + "@" + strconv.Itoa(pos) + "@" + url
@@ -120,9 +134,7 @@ func saveImages(imgUrl string) {
 	log.Println(imgUrl)
 	fileDir := imgDir + sku + "/"
 
-	mu.Lock()
 	_, err := os.Stat(fileDir)
-	mu.Unlock()
 	fmt.Println(err)
 	if err != nil {
 		err := os.Mkdir(fileDir, os.ModePerm)
@@ -160,12 +172,45 @@ func saveImages(imgUrl string) {
 		return
 	}
 
+	//把当前的路径存下来
+	mu.Lock()
+	newImgPaht[sku] = append(newImgPaht[sku], filename)
+	mu.Unlock()
 	chanLoopCount <- 1
 	defer image.Close()
 	image.Write(data)
+
+	//如果为0代表文件下载完成,通过mysqlChannel更新文件(这里==1就代表最后一个文件)
+	if record[sku] == 1 {
+		newPath := ""
+		sort.Strings(newImgPaht[sku])
+		for _, tmp := range newImgPaht[sku] {
+			newPath += tmp + ";"
+		}
+		newPath = newPath[:strings.LastIndex(newPath, ";")]
+		chanMysql <- map[string]string{"sku": sku, "img": newPath}
+	} else {
+		mu.Lock()
+		//对应的文件总数减一
+		record[sku] -= 1
+		mu.Unlock()
+	}
 }
 
 func checkExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil
+}
+
+func updateProduct() {
+	for row := range chanMysql {
+		fmt.Println(row)
+		stmt, _ := db.Prepare(`update lux_products set media_gallery = ? where sku = ? `)
+		_, err := stmt.Exec(row["img"], row["sku"])
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(row["sku"])
+		os.Exit(1)
+	}
 }
