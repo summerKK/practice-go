@@ -31,9 +31,29 @@ func init() {
 	chanImgUrl = make(chan string, 100)
 	chanLoopCount = make(chan int, 1000)
 	imgDir = "D:/goprojects/src/practice/ch3/vipstation/pic/"
+
+	logFile, err := os.OpenFile("D:/goprojects/src/practice/ch3/vipstation/crawl.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetOutput(logFile)
 }
 
 func main() {
+
+	picDir := "D:/goprojects/src/practice/ch3/vipstation/pic/"
+	_, err := os.Stat(picDir)
+
+	if err != nil {
+		err := os.Mkdir(picDir, os.ModePerm)
+		if err != nil {
+			fmt.Println("create Folder error:", err)
+			os.Exit(1)
+		}
+	}
 
 	rows, err := db.Query("select media_gallery from lux_products")
 	if err != nil {
@@ -65,9 +85,7 @@ func main() {
 //解析图片url
 func downloadImage() {
 	for imgUrl := range chanImgUrl {
-		go func() {
-			saveImages(imgUrl)
-		}()
+		saveImages(imgUrl)
 	}
 }
 
