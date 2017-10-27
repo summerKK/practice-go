@@ -10,14 +10,18 @@ import (
 	"net/http"
 	"io/ioutil"
 	"os"
-	"net/url"
+	"sync"
+	"strconv"
 )
 
 var (
 	db            *sql.DB
 	chanLoopCount chan int
 	chanImgUrl    chan string
+	chs           chan int
 	imgDir        string
+	wg            *sync.WaitGroup
+	mu            sync.Mutex
 )
 
 func init() {
@@ -30,6 +34,8 @@ func init() {
 
 	chanImgUrl = make(chan string, 100)
 	chanLoopCount = make(chan int, 1000)
+	//控制goruntine
+	chs = make(chan int, 20)
 	imgDir = "D:/goprojects/src/practice/ch3/vipstation/pic/"
 
 	logFile, err := os.OpenFile("D:/goprojects/src/practice/ch3/vipstation/crawl.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
@@ -37,6 +43,8 @@ func init() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	wg = &sync.WaitGroup{}
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.SetOutput(logFile)
@@ -55,7 +63,7 @@ func main() {
 		}
 	}
 
-	rows, err := db.Query("select media_gallery from lux_products")
+	rows, err := db.Query("select media_gallery,sku from lux_products")
 	if err != nil {
 		fmt.Println("fetech data failed:", err.Error())
 		return
@@ -65,11 +73,13 @@ func main() {
 
 	defer rows.Close()
 	for rows.Next() {
-		var media_gallery string
-		rows.Scan(&media_gallery)
+		var media_gallery, sku string
+		rows.Scan(&media_gallery, &sku)
 		imgPath := strings.Split(media_gallery, ";")
+		pos := 1
 		for _, url := range imgPath {
-			chanImgUrl <- url
+			chanImgUrl <- sku + "@" + strconv.Itoa(pos) + "@" + url
+			pos++
 		}
 	}
 
@@ -85,22 +95,45 @@ func main() {
 //解析图片url
 func downloadImage() {
 	for imgUrl := range chanImgUrl {
-		saveImages(imgUrl)
+		//控制并发
+		chs <- 0
+		wg.Add(1)
+		go saveImages(imgUrl)
 	}
+	wg.Wait()
+	close(chanLoopCount)
 }
 
 //下载图片
 func saveImages(imgUrl string) {
+	defer func() {
+		//下载完后释放资源,保证20个goruntine
+		<-chs
+		wg.Done()
+	}()
+	//sku@position@img
+	//vip124@1@http://erp.vipstation.com.hk/upload/image/20170601/20170601164454_0421.jpg
+	pictureInfo := strings.Split(imgUrl, "@")
+	sku := pictureInfo[0]
+	pos := pictureInfo[1]
+	imgUrl = pictureInfo[2]
 	log.Println(imgUrl)
-	u, err := url.Parse(imgUrl)
+	fileDir := imgDir + sku + "/"
+
+	mu.Lock()
+	_, err := os.Stat(fileDir)
+	mu.Unlock()
+	fmt.Println(err)
 	if err != nil {
-		log.Println("parse url failed:", imgUrl, err)
-		return
+		err := os.Mkdir(fileDir, os.ModePerm)
+		if err != nil {
+			fmt.Println("create Folder error:", err)
+			log.Println("create Folder error:", err)
+		}
 	}
 
-	//去掉最左边的'/'
-	tmp := strings.TrimLeft(u.Path, "/")
-	filename := imgDir + strings.ToLower(strings.Replace(tmp, "/", "-", -1))
+	extension := imgUrl[strings.LastIndex(imgUrl, "."):]
+	filename := fileDir + sku + "_" + pos + extension
 
 	exists := checkExists(filename)
 	if exists {
