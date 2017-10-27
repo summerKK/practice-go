@@ -134,15 +134,16 @@ func saveImages(imgUrl string) {
 	log.Println(imgUrl)
 	fileDir := imgDir + sku + "/"
 
+	mu.Lock()
 	_, err := os.Stat(fileDir)
-	fmt.Println(err)
-	if err != nil {
+	if os.IsNotExist(err) {
 		err := os.Mkdir(fileDir, os.ModePerm)
 		if err != nil {
 			fmt.Println("create Folder error:", err)
 			log.Println("create Folder error:", err)
 		}
 	}
+	mu.Unlock()
 
 	extension := imgUrl[strings.LastIndex(imgUrl, "."):]
 	filename := fileDir + sku + "_" + pos + extension
@@ -210,7 +211,5 @@ func updateProduct() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(row["sku"])
-		os.Exit(1)
 	}
 }
