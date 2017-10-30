@@ -82,8 +82,15 @@ func main() {
 
 	defer rows.Close()
 	for rows.Next() {
+
 		var media_gallery, sku string
 		rows.Scan(&media_gallery, &sku)
+
+		//判断图片路径是否正确
+		if !strings.Contains(media_gallery, "http://") {
+			continue
+		}
+
 		imgPath := strings.Split(media_gallery, ";")
 		//把要下载的文件存放下来
 		mu.Lock()
