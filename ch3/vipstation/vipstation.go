@@ -112,6 +112,8 @@ func main() {
 		fmt.Println("count:", count)
 	}
 	fmt.Println("downloaded")
+	log.Println("downloaded")
+	log.Println("count:", count)
 
 }
 
