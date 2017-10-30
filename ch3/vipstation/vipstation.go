@@ -43,7 +43,7 @@ func init() {
 	chanMysql = make(chan map[string]string)
 	//控制goruntine
 	chs = make(chan int, 20)
-	imgDir = "D:/goprojects/src/practice/ch3/vipstation/pic/"
+	imgDir = "D:/goprojects/src/practice/ch3/vipstation/pic1/"
 
 	logFile, err := os.OpenFile("D:/goprojects/src/practice/ch3/vipstation/crawl.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	if err != nil {
@@ -61,11 +61,10 @@ func init() {
 
 func main() {
 
-	picDir := "D:/goprojects/src/practice/ch3/vipstation/pic/"
-	_, err := os.Stat(picDir)
+	_, err := os.Stat(imgDir)
 
 	if err != nil {
-		err := os.Mkdir(picDir, os.ModePerm)
+		err := os.Mkdir(imgDir, os.ModePerm)
 		if err != nil {
 			fmt.Println("create Folder error:", err)
 			os.Exit(1)
@@ -91,6 +90,16 @@ func main() {
 		record[sku] = len(imgPath)
 		mu.Unlock()
 		pos := 1
+		//创建文件夹
+		fileDir := imgDir + sku + "/"
+		_, err := os.Stat(fileDir)
+		if os.IsNotExist(err) {
+			err := os.Mkdir(fileDir, os.ModePerm)
+			if err != nil {
+				fmt.Println("create Folder error:", err)
+				log.Println("create Folder error:", err)
+			}
+		}
 		for _, url := range imgPath {
 			chanImgUrl <- sku + "@" + strconv.Itoa(pos) + "@" + url
 			pos++
@@ -134,17 +143,6 @@ func saveImages(imgUrl string) {
 	log.Println(imgUrl)
 	fileDir := imgDir + sku + "/"
 
-	mu.Lock()
-	_, err := os.Stat(fileDir)
-	if os.IsNotExist(err) {
-		err := os.Mkdir(fileDir, os.ModePerm)
-		if err != nil {
-			fmt.Println("create Folder error:", err)
-			log.Println("create Folder error:", err)
-		}
-	}
-	mu.Unlock()
-
 	extension := imgUrl[strings.LastIndex(imgUrl, "."):]
 	filename := fileDir + sku + "_" + pos + extension
 
@@ -181,7 +179,7 @@ func saveImages(imgUrl string) {
 	defer image.Close()
 	image.Write(data)
 
-	//如果为0代表文件下载完成,通过mysqlChannel更新文件(这里==1就代表最后一个文件)
+	//如果为1代表文件下载完成,通过mysqlChannel更新文件(这里==1就代表最后一个文件)
 	if record[sku] == 1 {
 		newPath := ""
 		sort.Strings(newImgPaht[sku])
