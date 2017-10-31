@@ -22,6 +22,7 @@ var (
 	chanMysql     chan map[string]string
 	chs           chan int
 	imgDir        string
+	linuxImgDir   string
 	wg            *sync.WaitGroup
 	mu            sync.Mutex
 	//统计每个sku下载文件的个数
@@ -44,6 +45,8 @@ func init() {
 	//控制goruntine
 	chs = make(chan int, 20)
 	imgDir = "D:/goprojects/src/practice/ch3/vipstation/pic1/"
+	//服务器上面保存图片的位置.主要是用来更新数据库的图片位置
+	linuxImgDir = "/luxsens/robot/imgs/vipAPI/"
 
 	logFile, err := os.OpenFile("D:/goprojects/src/practice/ch3/vipstation/crawl.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	if err != nil {
@@ -71,7 +74,7 @@ func main() {
 		}
 	}
 
-	rows, err := db.Query("select media_gallery,sku from lux_products")
+	rows, err := db.Query(`select media_gallery,sku from lux_products /*where media_gallery like "http://%"*/`)
 	if err != nil {
 		fmt.Println("fetech data failed:", err.Error())
 		return
@@ -151,9 +154,12 @@ func saveImages(imgUrl string) {
 	imgUrl = pictureInfo[2]
 	log.Println(imgUrl)
 	fileDir := imgDir + sku + "/"
+	linuxFileDir := linuxImgDir + sku + "/"
 
 	extension := imgUrl[strings.LastIndex(imgUrl, "."):]
 	filename := fileDir + sku + "_" + pos + extension
+	//服务器上面图片放置的位置(图片在本地下载完成打包上传到服务器)
+	linuxFileName := linuxFileDir + sku + "_" + pos + extension
 
 	exists := checkExists(filename)
 	if exists {
@@ -182,7 +188,8 @@ func saveImages(imgUrl string) {
 
 	//把当前的路径存下来
 	mu.Lock()
-	newImgPaht[sku] = append(newImgPaht[sku], filename)
+	//这里发送服务器文件的位置
+	newImgPaht[sku] = append(newImgPaht[sku], linuxFileName)
 	mu.Unlock()
 	chanLoopCount <- 1
 	defer image.Close()
