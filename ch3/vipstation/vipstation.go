@@ -83,14 +83,6 @@ func main() {
 	go downloadImage()
 	go updateProduct()
 
-	go func() {
-		count := 0
-		for num := range chanLoopCount {
-			count += num
-			fmt.Println("count:", count)
-		}
-	}()
-
 	defer rows.Close()
 	for rows.Next() {
 
@@ -124,8 +116,12 @@ func main() {
 		}
 	}
 
-	fmt.Println("downloaded")
-	log.Println("downloaded")
+	count := 0
+	for num := range chanLoopCount {
+		count += num
+		fmt.Println("count:", count)
+	}
+
 }
 
 //解析图片url
@@ -138,6 +134,7 @@ func downloadImage() {
 	}
 	wg.Wait()
 	close(chanLoopCount)
+
 }
 
 //下载图片
@@ -164,12 +161,19 @@ func saveImages(imgUrl string) {
 
 	exists := checkExists(filename)
 	if exists {
+		//把当前的路径存下来
+		mu.Lock()
+		//这里发送服务器文件的位置
+		newImgPaht[sku] = append(newImgPaht[sku], linuxFileName)
+		mu.Unlock()
+		checkForUpdate(sku)
 		return
 	}
 
 	response, err := http.Get(imgUrl)
 	if err != nil {
 		log.Println("get img_url failed:", err)
+		checkForUpdate(sku)
 		return
 	}
 
@@ -192,25 +196,12 @@ func saveImages(imgUrl string) {
 	//这里发送服务器文件的位置
 	newImgPaht[sku] = append(newImgPaht[sku], linuxFileName)
 	mu.Unlock()
+
 	chanLoopCount <- 1
 	defer image.Close()
 	image.Write(data)
 
-	//如果为1代表文件下载完成,通过mysqlChannel更新文件(这里==1就代表最后一个文件)
-	if record[sku] == 1 {
-		newPath := ""
-		sort.Strings(newImgPaht[sku])
-		for _, tmp := range newImgPaht[sku] {
-			newPath += tmp + ";"
-		}
-		newPath = newPath[:strings.LastIndex(newPath, ";")]
-		chanMysql <- map[string]string{"sku": sku, "img": newPath}
-	} else {
-		mu.Lock()
-		//对应的文件总数减一
-		record[sku] -= 1
-		mu.Unlock()
-	}
+	checkForUpdate(sku)
 }
 
 func checkExists(filename string) bool {
@@ -226,5 +217,23 @@ func updateProduct() {
 		if err != nil {
 			fmt.Println(err)
 		}
+	}
+}
+
+func checkForUpdate(sku string) {
+	//如果为1代表文件下载完成,通过mysqlChannel更新文件(这里==1就代表最后一个文件)
+	if record[sku] == 1 {
+		newPath := ""
+		sort.Strings(newImgPaht[sku])
+		for _, tmp := range newImgPaht[sku] {
+			newPath += tmp + ";"
+		}
+		newPath = newPath[:strings.LastIndex(newPath, ";")]
+		chanMysql <- map[string]string{"sku": sku, "img": newPath}
+	} else {
+		mu.Lock()
+		//对应的文件总数减一
+		record[sku] -= 1
+		mu.Unlock()
 	}
 }
