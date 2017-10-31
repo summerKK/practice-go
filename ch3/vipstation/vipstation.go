@@ -74,7 +74,7 @@ func main() {
 		}
 	}
 
-	rows, err := db.Query(`select media_gallery,sku from lux_products /*where media_gallery like "http://%"*/`)
+	rows, err := db.Query(`select media_gallery,sku from lux_products where media_gallery like "http://%"`)
 	if err != nil {
 		fmt.Println("fetech data failed:", err.Error())
 		return
@@ -82,6 +82,14 @@ func main() {
 
 	go downloadImage()
 	go updateProduct()
+
+	go func() {
+		count := 0
+		for num := range chanLoopCount {
+			count += num
+			fmt.Println("count:", count)
+		}
+	}()
 
 	defer rows.Close()
 	for rows.Next() {
@@ -116,15 +124,8 @@ func main() {
 		}
 	}
 
-	count := 0
-	for num := range chanLoopCount {
-		count += num
-		fmt.Println("count:", count)
-	}
 	fmt.Println("downloaded")
 	log.Println("downloaded")
-	log.Println("count:", count)
-
 }
 
 //解析图片url
