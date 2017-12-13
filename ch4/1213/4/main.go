@@ -73,6 +73,7 @@ func (length byLength) Swap(i, j int) {
 	length[i], length[j] = length[j], length[i]
 }
 
+
 func main() {
 	var b byArtist = tracks
 	sort.Sort(b)
@@ -82,5 +83,6 @@ func main() {
 	var l byLength = tracks
 	sort.Sort(l)
 	printTracks(l)
+
 
 }
