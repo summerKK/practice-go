@@ -6,7 +6,6 @@ import (
 	"github.com/hunterhug/GoSpider/query"
 	"github.com/PuerkitoBio/goquery"
 	"strings"
-	"os"
 )
 
 func main() {
