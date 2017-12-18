@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"fmt"
+	"strings"
 )
 
 func deleteData(db *sql.DB) {
@@ -26,9 +27,9 @@ func deleteData(db *sql.DB) {
 }
 
 func insertData(db *sql.DB) {
-	m := map[string]string{"name": "summer", "age": "25"}
+	m := map[string]string{"name": "s'u'm'mer", "age": "25"}
 
-	vals := []string{}
+	vals := []interface{}{}
 	keys := []string{}
 	prepare := []string{}
 	for i, v := range m {
@@ -37,21 +38,17 @@ func insertData(db *sql.DB) {
 		prepare = append(prepare, "?")
 	}
 
-	stmt, _ := db.Prepare(`INSERT INTO user ( name, age) VALUES ( ?, ?)`)
+	stmt, _ := db.Prepare(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
+	fmt.Println(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
+	fmt.Println(vals)
+	rows, err := stmt.Query(vals...)
 
-	rows, err := stmt.Query("xys", 200)
 	defer stmt.Close()
 
 	rows.Close()
 	if err != nil {
 		log.Fatalf("insert data error: %v\n", err)
 	}
-
-	rows, err = stmt.Query("test", 19)
-	var result int
-	rows.Scan(&result)
-	log.Printf("insert result %v\n", result)
-	rows.Close()
 }
 
 func selectData(db *sql.DB) {
@@ -84,6 +81,7 @@ func selectData(db *sql.DB) {
 }
 
 func main() {
+
 	db, err := sql.Open("mysql", "root:177678012@tcp(127.0.0.1:3306)/test")
 
 	defer db.Close()
