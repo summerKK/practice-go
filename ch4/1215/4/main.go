@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"regexp"
+	"strings"
 )
 
 func main() {
@@ -16,6 +17,23 @@ func main() {
 
 	res := regex.FindStringSubmatch(s)
 	fmt.Println(res)
+
+	m := map[string]string{"name": "summer", "sex": "m'an", "age": "1'8"}
+
+	key := []string{}
+	val := []string{}
+	prepare := []string{}
+	for i, v := range m {
+		key = append(key, i)
+		val = append(val, "'"+strings.Replace(v, "'", "\\'", -1)+"'")
+		prepare = append(prepare, "?")
+	}
+
+	s = `insert into users (` + strings.Join(key, ",") + `) values (` + strings.Join(prepare, ",") + `)`
+
+	fmt.Println(s)
+
+	fmt.Println(key, val)
 }
 
 func test1() {
