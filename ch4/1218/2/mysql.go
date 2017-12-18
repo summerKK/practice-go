@@ -27,17 +27,19 @@ func deleteData(db *sql.DB) {
 }
 
 func insertData(db *sql.DB) {
-	m := map[string]string{"name": "s'u'm'mer", "age": "25"}
+	m := map[string]string{"name": "s'u'm'mer", "age": "25",}
 
-	vals := []interface{}{}
+	vals := make([]interface{}, 0, len(m))
 	keys := []string{}
 	prepare := []string{}
 	for i, v := range m {
 		vals = append(vals, v)
+		fmt.Printf("%p\n\r", vals)
 		keys = append(keys, i)
 		prepare = append(prepare, "?")
 	}
-
+	fmt.Printf("%#v\n\r", vals)
+	fmt.Println("----------")
 	stmt, _ := db.Prepare(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
 	fmt.Println(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
 	fmt.Println(vals)
