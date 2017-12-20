@@ -40,7 +40,10 @@ func insertData(db *sql.DB) {
 	}
 	fmt.Printf("%#v\n\r", vals)
 	fmt.Println("----------")
-	stmt, _ := db.Prepare(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
+	stmt, err := db.Prepare(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
+	if err != nil{
+		log.Fatal(err)
+	}
 	fmt.Println(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
 	fmt.Println(vals)
 	rows, err := stmt.Query(vals...)
@@ -56,10 +59,11 @@ func insertData(db *sql.DB) {
 func selectData(db *sql.DB) {
 	var id int
 	var name string
-	var age int
+	var age string
+	m := map[string]string{"summer":"10"}
 	stmt, _ := db.Prepare(`SELECT * From user where age > ?`)
 
-	rows, err := stmt.Query(10)
+	rows, err := stmt.Query(m["summer"])
 
 	defer stmt.Close()
 	defer rows.Close()
