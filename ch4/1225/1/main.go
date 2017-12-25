@@ -24,7 +24,7 @@ func main() {
 	os.Remove(tmpFile)
 
 	combineFiles()
-	ReadLine()
+	readLine()
 	r := res(make([]string, 0, len(statisData)))
 	for i, v := range statisData {
 		r = append(r, i+"->"+strconv.Itoa(v))
@@ -56,7 +56,7 @@ func check(e error) {
 	}
 }
 
-func ReadLine() {
+func readLine() {
 	f, err := os.Open(tmpFile)
 	if err != nil {
 		log.Fatal(err)
