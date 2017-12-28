@@ -84,7 +84,7 @@ func statistics(key string) {
 	if _, ok := statisData[key]; ok {
 		statisData[key] += 1
 	} else {
-		statisData[key] = 0
+		statisData[key] = 1
 	}
 }
 
