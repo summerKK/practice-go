@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	logPath    string         = "ch4/1225/1/log/"
-	tmpFile    string         = "ch4/1225/1/tmp/tmp.log"
+	logPath    string         = "ch4/aliyun/1/log/"
+	tmpFile    string         = "ch4/aliyun/1/tmp/tmp.log"
 	statisData map[string]int = map[string]int{}
 )
 
