@@ -3,9 +3,11 @@ package omap
 import (
 	"sort"
 	"reflect"
+	"bytes"
+	"fmt"
 )
 
-type keys interface {
+type Keys interface {
 	sort.Interface
 	Add(k interface{}) bool
 	Remove(k interface{}) bool
@@ -14,13 +16,24 @@ type keys interface {
 	GetAll() []interface{}
 	Search(k interface{}) (index int, contains bool)
 	ElemType() reflect.Type
-	CompareFunc() func(interface{}, interface{}) int8
+	CompareFunc() compareFunc
+	String() string
 }
 
 type mykeys struct {
 	container  []interface{}
-	compareFun func(interface{}, interface{}) uint8
+	compareFun compareFunc
 	elemType   reflect.Type
+}
+
+type compareFunc func(interface{}, interface{}) int8
+
+func NewKeys(cofu compareFunc, elemType reflect.Type) *mykeys {
+	return &mykeys{
+		container:  make([]interface{}, 0),
+		compareFun: cofu,
+		elemType:   elemType,
+	}
 }
 
 func (keys *mykeys) Len() int {
@@ -66,9 +79,72 @@ func (keys *mykeys) Search(k interface{}) (index int, contains bool) {
 			return keys.compareFun(keys.container[i], k) >= 0
 		})
 
-	//
 	if index < keys.Len() && keys.container[index] == k {
 		contains = true
 	}
 	return
+}
+
+func (keys *mykeys) Remove(k interface{}) bool {
+	index, exist := keys.Search(k);
+	if !exist {
+		return false
+	}
+	//找到对应下标的数据并且删除掉
+	keys.container = append(keys.container[:index], keys.container[index+1:]...)
+	return true
+}
+
+func (keys *mykeys) Clear() {
+	keys.container = make([]interface{}, 0)
+}
+
+func (keys *mykeys) Get(index int) interface{} {
+	if index >= keys.Len() {
+		return nil
+	}
+	return keys.container[index]
+}
+
+func (keys *mykeys) GetAll() []interface{} {
+	initialLen := keys.Len()
+	snapshot := make([]interface{}, 0, initialLen)
+	actualLen := 0
+	for _, v := range keys.container {
+		if actualLen < initialLen {
+			snapshot[actualLen] = v
+		} else {
+			snapshot = append(snapshot, v)
+		}
+		actualLen++
+	}
+	if actualLen < initialLen {
+		return snapshot[:actualLen]
+	}
+	return snapshot
+
+}
+
+func (keys *mykeys) ElemType() reflect.Type {
+	return keys.elemType
+}
+
+func (keys *mykeys) CompareFunc() compareFunc {
+	return keys.compareFun
+}
+
+func (keys *mykeys) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("keys{")
+	first := true
+	for _, v := range keys.container {
+		if !first {
+			buf.WriteString(" ")
+		} else {
+			first = true
+		}
+		buf.WriteString(fmt.Sprintf("%v", v))
+	}
+	buf.WriteString("}")
+	return buf.String()
 }
