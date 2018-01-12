@@ -46,14 +46,16 @@ func insertData(db *sql.DB) {
 	}
 	fmt.Println(`INSERT INTO user ( ` + strings.Join(keys, ",") + `) VALUES ( ` + strings.Join(prepare, ",") + `)`)
 	fmt.Println(vals)
-	rows, err := stmt.Query(vals...)
+	rows, err := stmt.Exec(vals...)
 
 	defer stmt.Close()
 
-	rows.Close()
+	//rows.Close()
 	if err != nil {
 		log.Fatalf("insert data error: %v\n", err)
 	}
+
+	fmt.Println(rows.LastInsertId())
 }
 
 func selectData(db *sql.DB) {
@@ -97,9 +99,9 @@ func main() {
 		return
 	}
 
-	deleteData(db)
+	//deleteData(db)
 
 	insertData(db)
 
-	selectData(db)
+	//selectData(db)
 }
