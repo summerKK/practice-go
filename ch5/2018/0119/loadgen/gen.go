@@ -112,7 +112,7 @@ func (tickets *myGenerator) Start() {
 }
 
 func (tickets *myGenerator) Stop() (uint64, bool) {
-	return 0, false
+
 }
 
 func (tickets *myGenerator) Status() lib.GenStatus {
