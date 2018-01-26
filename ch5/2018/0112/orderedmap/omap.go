@@ -39,7 +39,7 @@ type OrderedMap interface {
 	//获取已排序的键值对所组成的字典值
 	ToMap() map[interface{}]interface{}
 	//获取键的类型
-	keyType() reflect.Type
+	KeyType() reflect.Type
 	//获取元素的类型
 	ElemType() reflect.Type
 	String() string
@@ -51,9 +51,10 @@ type myOrderedMap struct {
 	m        map[interface{}]interface{}
 }
 
-func NewOrderMap(keys Keys, elemType reflect.Type) OrderedMap {
+func NewOrderedMap(keys Keys, elemType reflect.Type) OrderedMap {
 	return &myOrderedMap{
 		keys:     keys,
+		m:        make(map[interface{}]interface{}),
 		elemType: elemType,
 	}
 }
@@ -122,14 +123,14 @@ func (omap *myOrderedMap) FirstKey() interface{} {
 		return nil
 	}
 
-	return omap.m[omap.keys.Get(0)]
+	return omap.keys.Get(0)
 }
 
 func (omap *myOrderedMap) LastKey() interface{} {
 	if omap.Len() == 0 {
 		return nil
 	}
-	return omap.m[omap.keys.Get(omap.Len()-1)]
+	return omap.keys.Get(omap.Len() - 1)
 }
 
 func (omap *myOrderedMap) HeadMap(tokey interface{}) OrderedMap {
@@ -141,10 +142,6 @@ func (omap *myOrderedMap) TailMap(fromKey interface{}) OrderedMap {
 }
 
 func (omap *myOrderedMap) SubMap(fromKey interface{}, toKey interface{}) OrderedMap {
-
-	if !omap.IsAcceptableElem(fromKey) || !omap.IsAcceptableElem(toKey) {
-		return nil
-	}
 
 	newOrderedMap := &myOrderedMap{
 		keys:     NewKeys(omap.keys.CompareFunc(), omap.keys.ElemType()),
@@ -177,20 +174,20 @@ func (omap *myOrderedMap) Keys() []interface{} {
 		return nil
 	}
 	initialLen := omap.keys.Len()
-	keys := make([]interface{}, 0, initialLen)
+	keysVal := make([]interface{}, initialLen)
 	actualLen := 0
 	for _, k := range omap.keys.GetAll() {
 		if actualLen < initialLen {
-			keys[actualLen] = k
+			keysVal[actualLen] = k
 		} else {
-			keys = append(keys, k)
+			keysVal = append(keysVal, k)
 		}
 		actualLen++
 	}
 	if actualLen < initialLen {
-		return keys[:actualLen]
+		return keysVal[:actualLen]
 	}
-	return keys
+	return keysVal
 }
 
 func (omap *myOrderedMap) Elems() []interface{} {
@@ -198,7 +195,7 @@ func (omap *myOrderedMap) Elems() []interface{} {
 		return nil
 	}
 	initialLen := omap.Len()
-	elems := make([]interface{}, 0, initialLen)
+	elems := make([]interface{}, initialLen)
 	actualLen := 0
 	for _, v := range omap.keys.GetAll() {
 		elem := omap.m[v]
@@ -223,7 +220,7 @@ func (omap *myOrderedMap) ToMap() map[interface{}]interface{} {
 	return replica
 }
 
-func (omap *myOrderedMap) keyType() reflect.Type {
+func (omap *myOrderedMap) KeyType() reflect.Type {
 	return omap.keys.ElemType()
 }
 

@@ -20,6 +20,10 @@ type Keys interface {
 	String() string
 }
 
+// compareFunc的结果值：
+//   小于0: 第一个参数小于第二个参数
+//   等于0: 第一个参数等于第二个参数
+//   大于1: 第一个参数大于第二个参数
 type mykeys struct {
 	container  []interface{}
 	compareFun compareFunc
@@ -108,7 +112,7 @@ func (keys *mykeys) Get(index int) interface{} {
 
 func (keys *mykeys) GetAll() []interface{} {
 	initialLen := keys.Len()
-	snapshot := make([]interface{}, 0, initialLen)
+	snapshot := make([]interface{}, initialLen)
 	actualLen := 0
 	for _, v := range keys.container {
 		if actualLen < initialLen {
