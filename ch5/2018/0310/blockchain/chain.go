@@ -13,6 +13,8 @@ import (
 	"io"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/joho/godotenv"
+	"strings"
+	"fmt"
 )
 
 type Block struct {
@@ -25,6 +27,9 @@ type Block struct {
 	Hash string
 	//前一个块生成的散列值
 	PrevHash string
+	//难度系数
+	Difficulty int
+	Nonce      string
 }
 
 type Message struct {
@@ -32,6 +37,7 @@ type Message struct {
 }
 
 var Blockchain []Block
+var difficulty int = 2
 
 //生成块散列值
 func calculateHash(block Block) string {
@@ -40,6 +46,7 @@ func calculateHash(block Block) string {
 	buffer.WriteString(block.Timestamp)
 	buffer.WriteString(string(block.BPM))
 	buffer.WriteString(block.PrevHash)
+	buffer.WriteString(block.Nonce)
 	record := buffer.String()
 	h := sha256.New()
 	h.Write([]byte(record))
@@ -55,9 +62,28 @@ func generateBlock(oldBlock Block, BPM int) (Block, error) {
 	newBlock.Timestamp = t.String()
 	newBlock.BPM = BPM
 	newBlock.PrevHash = oldBlock.Hash
-	newBlock.Hash = calculateHash(oldBlock)
+	newBlock.Difficulty = difficulty
+
+	for i := 0; ; i++ {
+		hex := fmt.Sprintf("%x", i)
+		newBlock.Nonce = hex
+		if !isHashValid(calculateHash(newBlock), newBlock.Difficulty) {
+			fmt.Println(calculateHash(newBlock), "do more work")
+			continue
+		} else {
+			fmt.Println(calculateHash(newBlock), "work done!")
+			newBlock.Hash = calculateHash(newBlock)
+			break
+		}
+	}
 
 	return newBlock, nil
+}
+
+//验证散列值
+func isHashValid(hash string, difficulty int) bool {
+	prefix := strings.Repeat("0", difficulty)
+	return strings.HasPrefix(hash, prefix)
 }
 
 //验证块
@@ -158,7 +184,7 @@ func main() {
 
 	go func() {
 		t := time.Now()
-		genesisBlock := Block{0, t.String(), 0, "", ""}
+		genesisBlock := Block{0, t.String(), 0, "", "",difficulty,""}
 		spew.Dump(genesisBlock)
 		Blockchain = append(Blockchain, genesisBlock)
 	}()
